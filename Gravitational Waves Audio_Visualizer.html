@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LIGO Gravitational Wave Visualizer</title>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #000000;
+            color: #00ffcc;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #0f0f14;
+            padding: 30px;
+            border: 1px solid #00ffcc;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(4, 255, 205, 0.2);
+        }
+
+        h1 {
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        select {
+            width: 100%;
+            padding: 15px;
+            margin: 20px 0;
+            background: #000000;
+            color: #00ffcc;
+            border: 1px solid #00ffcc;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background: #00ffcc;
+            color: #000000;
+            border: none;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover:not(:disabled) {
+            background: #00ddb8;
+            box-shadow: 0 0 15px #00ffcc;
+        }
+
+        button:disabled {
+            background: #333;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        .info-panel {
+            margin: 20px;
+            border-left: 4px solid #ff3d77;
+            background: rgba(255, 51, 102, 0.1);
+            padding: 15px;
+            color: #fff;
+        }
+
+        canvas {
+            height: 250px;
+            border: 1px solid #333;
+            width: 100%;
+            margin-top: 21px;
+            background: #000;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Audio-Visualizer</h2>
+        <select id="event-selector">
+            <option value="-1">Select a Merger Event</option>
+        </select>
+    </div>
+
+
+    <div id="info" class="info-panel" style="display:none">
+        <h3 id="event-name" style="margin: top 0; color:#ff3366;"></h3>
+        <p id="event-desc"></p>
+        <p><strong>Mass 1:</strong> <span id="m1"></span>M☉ | <strong>Mass 2:</strong> <span id="m2"></span>M☉ </p>
+
+    </div>
+
+    <div></div>
+        <button id="play-btn" disabled>PLAY CHIRP</button>
+
+        <canvas id="visulaizer"></canvas>
+    </div>
+
+    <script>
+        //1. Hardcoded Data (Relpaces the Python API)
+        const eventsData= [
+        {
+            name: "GW150914(The First Detection)",
+            mass_1: 36.0,
+            mass_2: 29.0,
+            duration: 0.2,
+            start_freq: 35,
+            peak_freq: 250,
+            description: "The historic first observation of Gravitational Waves."
+        },
+
+        {
+            name: "GW170814 (Three-Detector Observation)",
+            mass_1: 30.5,
+            mass_2: 25.3,
+            duration: 0.25,
+            start_freq: 40,
+            peak_freq: 300,
+            description: "First merger detected by both LIGO and Virgo"
+        },
+        
+        {
+            name: "Gw190521 (The Heavy weigths)",
+            mass_1: 85.0,
+            mass_2: 66.0,
+            duration: 0.1,
+            start_freq: 10,
+            peak_freq: 60,
+            description: "A massive merger creating an intermediate-mass black hole. Very low frequency 'thud'."
+        }
+        ];
+
+        let selectedEvent = null;
+
+        //2. Canvas Setup
+        const canvas = document.getElementById('visualizer');
+        const ctx = canvas.getContext('2d');
+
+        //Set actual internal canvas resolution to match its CSS size
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+
+        //Draw initial  flatline 
+        drawWaveform(0, 0, 0);
+
+        const selector = document.getElementById('event-selector');
+        eventsData.forEach((ev, index) =>
+        {
+            const option = document.createElement('option');
+            option.value = index;
+            option.innerText = ev.name;
+
+            selector,appendChild(option); 
+        });
+
+        //4
+        selector.addEventListener('change', (e) =>
+        {
+            const index = e.target.value;
+            const btn = document.getElementById('play-btn');
+            const info = document.getElementById('info');
+
+            if (index >= 0) {
+                selectedEvent = eventsData[index];
+                document.getElementById('event-name').innerText = selectedEvent.name;
+                document.getElementById('event-desc').innerText = selectedEvent.description;
+                document.getElementById('m1').innerText = selectedEvent.mass_1;
+                document.getElementById('m2').innerText = selectedEvent.mass_2;
+                info.style.display = 'block';
+                btn.disabled = false;
+            }
+
+            else {
+                info.style.display = 'none';
+                btn.disables = true;
+            }
+        });
+
+
+        //5
+        document.getElementById('play-btn').addEventListener('click', () =>
+        {
+            if (!selectedEvent) return;
+            const audioCtx = new(window.AudioContext || window.webkitAudioContext)();
+            
+            const oscillator = audio.Ctx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.type = 'sine';
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+            const duration = selectedEvent.duration;
+
+            oscillator.frequency.setValueAtTime(selectedEvent.start_freq, now + duration);
+
+            gainNode.gain.setValueAtTime(0, now);
+            gainNode.gain.linearRampToValueAtTime(1, now + duration - 0.02);
+            gainNode.gain.linearRampToValueAtTime(0, now + duration);
+
+            oscillator.start(now);
+            oscillator.stop(now + duration + 0.1);
+
+            let startTime = performance.now();
+
+            function animate()  {
+                let elapsed = (performance.now() - startTime) / 1000;
+                let progress = Math.min(elapsed / duration, 1);
+                let currentFreq = selectedEvent.start_freq + (selectedEvent.peak_freq - selectedEvent.start_freq)* Math.pow(progress, 3);
+                let currentAmp = progress*100;
+
+
+                drawWaveform(currentFreq, currentAmp, progress);
+
+                if (progress<1) {
+                    requestAnimationFrame(animate);
+                }
+
+                else {
+                    setTimeout(() => drawWaveform(0, 0, 0), 100);
+                }
+            }
+            animate();
+        })
+
+
+        //6
+        function drawWaveform(frequency, amplitude, progress) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.beginPath();
+            ctx.lineWidth = 2;
+
+
+            let r = Math.floor(progress*255);
+            let g = Math.floor((1-progress)*255);
+            ctx.strokeStyle = `rgb(${r}, ${g}, 200)`;
+
+            const midY = canvas.height/2;
+
+            if(frequency===0)  {
+                ctx.moveTo(0, midY);
+            }
+            else {
+                for(let x=0; x<canvas.width; x++) {
+                    let y = midY + Math.sin(x*frequency*0.005)*amplitude;
+                    if (x===0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+        }
+
+    </script>
+</body>
+</html>
