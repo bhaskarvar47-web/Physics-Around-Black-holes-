@@ -5,29 +5,120 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gravitational Lensing Simulator</title>
     <style>
-        body { margin: 0;
-               overflow: hidden;
-               background-color: black;
-                font-family: sans-serif;
+        body {      
+                margin: 0;
+                overflow: hidden;
+                background-color: black;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                padding: 0;
+                color: var(--text-main);
+                display: flex;
+                height: 100vh;
         }
 
-        #ui-panel {
+        :root {
+            --bg-color: #0a0b0f;
+            --panel-bg: #1f2833;
+            --text-main: #c5c6c7;
+            --accent: #66fcf1;
+            --accent-dark: #45a29e;
+        }
+
+        #control-panel {
+            background-color: var(--panel-bg);
+            width: 320px;
+            padding: 20px;
+            display: flex;
+            direction: column;
+            box-shadow: 0 10px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+        }
+
+        h1 {
+            color: var(--accent);
+            margin-top: 0;
+            font-size: 1.5rem;
+            border-bottom: solid var(--accent-dark);
+            padding-bottom: 10px;
+        }
+
+        .control-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        input[type='range'] {
+            width: 100%;
+            cursor: pointer;
+            accent-color: var(--accent);
+        }
+
+        .value-display {
+            float: right;
+            font-family: monospace;
+            font-size: 1.1rem;
+            color: var(--accent);
+        }
+
+        .info-box {
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-top: auto;
+            border-left: 3px solid var(--accent-dark);
+        }
+
+        #simulator-container {
+            flex-grow: 1;
+            position: relative;
+            background-color: #000;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .crosshair {
             position: absolute;
-            top: 20px;
-            left: 20px;
-            color: #00ffcc;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 20px; 
-            border: 1px solid #00ffcc;
-            border-radius: 8px;
-            box-shadow: 0 0 15px rgba(0, 255, 204, 0.2);
+            top: 50%;
+            left: 50%;
+            width: 40px;
+            height: 40px;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
         }
 
-        input[type=range] {width: 100%; cursor: crosshair;}
+        .crosshair::before.crosshair::after {
+            content: '';
+            background-color: rgba(255, 255, 255, 0.2);
+            position: absolute;
+        }
+
+        .crosshair::before {
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 1px;
+        }
+
+        .crosshair::after {
+            left: 50%;
+            top: 0;
+            height: 100%;
+            width: 1px;
+        }
     </style>
 </head>
 <body>
-    <div id="ui-panel">
+    <div id="control-panel">
         <h2 style="margin-top: 0;">Black Hole Simulator</h2>
         <label for="massSlider">Mass (Solar Masses): <span id="massValue">10</span></label>
         <input type="range" id="massSlider" min="1" max="200" value="10">
