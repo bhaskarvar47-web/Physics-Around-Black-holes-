@@ -91,16 +91,16 @@
 
 
     <div id="info" class="info-panel" style="display:none">
-        <h3 id="event-name" style="margin: top 0; color:#ff3366;"></h3>
+        <h3 id="event-name" style="margin-top: 0; color:#ff3366;"></h3>
         <p id="event-desc"></p>
         <p><strong>Mass 1:</strong> <span id="m1"></span>M☉ | <strong>Mass 2:</strong> <span id="m2"></span>M☉ </p>
 
     </div>
 
-    <div></div>
+    <div>
         <button id="play-btn" disabled>PLAY CHIRP</button>
 
-        <canvas id="visulaizer"></canvas>
+        <canvas id="visualizer"></canvas>
     </div>
 
     <script>
@@ -157,7 +157,7 @@
             option.value = index;
             option.innerText = ev.name;
 
-            selector,appendChild(option); 
+            selector.appendChild(option); 
         });
 
         //4
@@ -179,7 +179,7 @@
 
             else {
                 info.style.display = 'none';
-                btn.disables = true;
+                btn.disabled = true;
             }
         });
 
@@ -190,7 +190,7 @@
             if (!selectedEvent) return;
             const audioCtx = new(window.AudioContext || window.webkitAudioContext)();
             
-            const oscillator = audio.Ctx.createOscillator();
+            const oscillator = audioCtx.createOscillator();
             const gainNode = audioCtx.createGain();
             oscillator.type = 'sine';
             oscillator.connect(gainNode);
