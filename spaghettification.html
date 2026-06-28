@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sphaghettification- Tidal Disruption Visualizer</title>
+
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..700&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap');
+
+    :root {
+        --void: #05050a;
+        --ember: #ff5a1f;
+        --horizon: #000000;
+        --ember-dim: #7a2c12;
+        --cold: #3fa8f4;
+        --amber: #f4c430;
+        --bone: #e8e6e0;
+        --bone-dim: #93918c;
+        --hud-bg: rgba(8, 8, 12, 0.7);
+        --hud-border: rgba(232, 230, 224, 0.15);
+        --font-display: "Fraunces", serif;
+        --font-mono: "JetBrains Mono" monospace;
+        --font-body: "Inter", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+        margin: 0;
+        padding: 0;
+        background: var(--void);
+        color: var(--bone);
+        font-family: var(--font-body);
+        overflow-x: hidden;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+    }
+
+    /* for ambient background that looks cool!!  */
+
+    .vignette {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        background-image: 
+        radial-gradient(1px 1px at 12% 18%, rgba(232, 230, 224, 0.55), transparent),
+        radial-gradient(1px 1px at 12% 18%, rgba(232, 230, 224, 0.4), transparent),
+        radial-gradient(1px 1px at 12% 18%, rgba(232, 230, 224, 0.6), transparent),
+        radial-gradient(1px 1px at 12% 18%, rgba(232, 230, 224, 0.35), transparent),
+        radial-gradient(1px 1px at 12% 18%, rgba(232, 230, 224, 0.5), transparent),
+        radial-gradient(1px 1px at 12% 18%, rgba(232, 230, 224, 0.45), transparent),
+        radial-gradient(1px 1px at 12% 18%, rgba(232, 230, 224, 0.4), transparent),
+        radial-gradient(1px 1px at 12% 18%, rgba(232, 230, 224, 0.5), transparent),
+        radial-gradient(1px 1px at 12% 18%, rgba(232, 230, 224, 0.3), transparent),
+        radial-gradient(1px 1px at 12% 18%, rgba(232, 230, 224, 0.45), transparent),
+        background-repeat: no-repeat;
+
+
+      /* Bulding a clean masthead*/
+
+      .masthead {
+        position: relative;
+        z-index: 2;
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 28px 32px 18px;
+      }
+
+      .masthead-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 18px;
+      }
+
+      .eyebrow {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--bone-dim);
+      }
+
+      .eyebrow-right {
+        color: var(--cold);
+        font-variant-numeric: tabular-nums;
+      }
+
+      h1 {
+        font-family: var(--font-display);
+        font-weight: 600;
+        font-size: clamp(2.6rem, 6vw, 44rem);
+        letter-spacing: -0.01em;
+        margin: 0 0 10px;
+        font-optical-sizing: auto;
+        font-variation-settings: "opsz" 80;
+        background: linear-gradient(180deg, var(--bone) 0%, var(--bone) 60%, var(--amber) 160%);
+        -webkit-background-clip: text;
+        background-clip: text;
+      }
+      
+      .subhead {
+        font-family: var(--font-body);
+        font-size: 1.05rem;
+        line-height: 1.55;
+        color: var(--bone-dim);
+        max-width: 640px;
+        margin: 0;
+      }
+
+      /* making canvas */
+
+      .stage {
+        position: relative;
+        z-index: 2;
+        max-width: 1100px;
+        margin: 10px auto 0;
+        padding: 0 32px;
+      }
+
+      .sim {
+        display: block;
+        width: 100%;
+        height: min(72vh, 640px);
+        background: radial-gradient(ellipse at 50% 50%, #0a0a14 0%, #050508 55%, #020203 100%);
+        border: 1px solid var(--hud-border);
+        border-radius: 4px;
+        cursor: crosshair;
+      }
+
+      .reticle-label {
+        position: absolute;
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        letter-spacing: 0.06em;
+        color: var(--ember);
+        pointer-events: none;
+        text-shadow: 0 0 8px rgba(255, 90,  31, 0.5);
+        white-space: nowrap; 
+      }
+
+      .hint {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        columns: var(--bone-dim);
+        text-align: center;
+        letter-spacing: 0.04em;
+        margin: 14px 0 6px;
+      }
+
+      /*making HUD panels*/
+
+      .hud {
+        position: absolute;
+        top: 20px;
+        width: 192px;
+        background: var(--hud-bg);
+        border: 1px solid var(--hud-border);
+        border-radius: 3px;
+        padding: 14px 16px 18px;
+        backdrop-filter: blur(6px);
+        font-family: var(--font-mono); 
+      }
+
+      .hud-left { left: 52px;}
+      .hud-right { right: 52px;}
+
+      .hud-title {
+        font-size: 10px;
+        letter-spacing: 0.16em;
+        color: var(--bone-dim);
+        border-bottom: 1px solid var(--hud-border);
+        padding-bottom: 8px;
+        margin-bottom: 10px;
+      }
+
+      .readout {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        padding: 5px 0;
+        font-size: 11.5px;
+      }
+
+      .readout-lable {
+        color: var(--bone-dim);
+        letter-spacing: 0.04em;
+      }
+
+      .readout-value  {
+        color: var(--cold);
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+        margin: 0 4px;
+      }
+
+      .readout-unit {
+        color: var(--bone-dim);
+        font-size: 10px;
+      }
+
+      .readout-warn .readout-value {
+        color: var(--amber);
+      }
+
+      .readout-warn.danger .readout-value {
+        color: var(--ember);
+      }
+
+      .status-value {
+        color: var(--bone);
+      }
+
+      .status-value.danger {
+        color: var(--ember);
+      }
+
+      ,.status-value.shredded {
+        color: var(--ember);
+        animation: flicker 0.6s infinite alternate;
+      }
+
+      @keyframes flicker {
+        from {opacity: 1;}
+        to {opacity: 0.55;}
+      }
+
+      .stress-meter {
+        margin-top: 10px;
+        height: 5px;
+        width: 100%;
+        background: rgba(232, 230, 224, 0.08);
+        border-radius: 2px;
+        overflow: hidden;
+      }
+
+      .stress-meter-fill {
+        height: 100%;
+        width: 0%;
+        background-color: linear-gradient(90deg, var(--cold), var(--amber), var(--ember));
+        transition: width 0.15s linear;
+      }
+
+      /*mass control*/
+
+      .mass-readout {
+        font-family: var(--font-display);
+        font-size: 1.8rem;
+        font-weight: 500;
+        color: var(--bone);
+        margin-bottom: px;
+      }
+
+      .mass-readout .sub {
+        font: 0.85rem;
+        color: var(--bone-dim);
+      }
+
+      input[type= "range"] {
+        width: 100%;
+        accent-color: var(--ember);
+        height: 18px;
+        margin: 6px 0 4px;
+        background: transparent;
+      }
+
+      input[type= "range"]:focus-visible {
+        outline: 2px solid var(--cold);
+        outline-offset: 3px;
+      }
+
+      .slider-scale {
+        display: flex;
+        justify-content: space-between;
+        font-size: 8.5px;
+        color: var(--bone-dim);
+        letter-spacing: 0.02em;
+        margin-bottom: 4px;
+      }
+
+      .slider-scale span:nth-child(2),
+      .slider-scale span:nth-child(3) {
+        display: none;
+      } 
+
+      @media (min-width: 640px) {
+        .slider-scale span:nth-child(2),
+        .slider-scale span:nth-child(3) {
+            display: inline;
+        }
+      }
+
+      
+
+
+
+</style>
+
+
+</head>
+<body>
+    
+</body>
+</html>
