@@ -474,6 +474,224 @@
 </style>
 </head>
 <body>
+    <div class="vignette"></div>
+    <div class="stars" id="'stars"></div>
+    <header class="masthead">
+      <div class="masthead-row">
+        <span class="eyebrow">Tidal Disruption Visualizer</span>
+        <span class="eyebrow eyebrow-right" id="clock">T+00:00.0</span>
+      </div>
+      <h1>Sphaghettification</h1>
+      <p class="subhead">Watch differential gravity stretch a falling body into the thread of itself, the instant before it cosses the point of no return.</p>
+    </header>
+
+    <main class="stage">
+      <canvas id="sim"></canvas>
+      <div class="reticle-label" id="horizontalLabel">EVENT HORIZON· r₍s₍ =<span id="rsValue">-</span>km</div>
+
+      <section class="hud hud-left">
+        <div class="hud-title">TELEMETRY</div>
+        <div class="readout">
+          <span class="readout-lable">DISTANCE</span>
+          <span class="readout-value" id="distValue">-</span>
+          <span class="readout-unit">km</span>
+        </div>
+
+        <div class="readout">
+          <span class="readout-lable">r / rₛ</span>
+          <span class="readout-value" id="ratioValue">-</span>
+        </div>
+
+        <div class="readout readout-warn" id="stressRow">
+          <span class="readout-lable">TIDAL STRESS</span>
+          <span class="readout-value" id="stressValue">-</span>
+          <span class="readout-unit">g/m</span>
+        </div>
+
+        <div class="readout">
+          <span class="readout-lable">STATUS</span>
+          <span class="readout-value status-value" id="statusValue">NOMINAL</span>
+        </div>
+
+        <div class="stress-meter">
+          <div class="stress-meter-fill" id="stressMeterFill"></div>
+        </div>
+      </section>
+
+
+      <section class="hud hud-right">
+        <div class="hud-title">SINGULARITY MASS</div>
+        <div class="mass-readout"><span id="massValue">10</span> M<span class="sub">☉</span></div>
+        <input type="range" id="massSlider" min="1" max="500" value="10" step="1" >
+        <div class="slider-scale">
+          <span>1 M☉</span>
+          <span>stellar</span>
+          <span>supermassive</span>
+          <span>500 M☉</span>
+        </div>
+
+        <div class="hud-divider"></div>
+        <div class="hud-title">FALLING BODY</div>
+        <div>
+          <button class="body-btn active" data-body="astronaut">ASTRONAUT</button>
+          <button class="body-btn" data-body="probe">PROBE</button>
+          <button class="body-btn" data-body="grid">TEST GRID</button>
+        </div>
+        <div class="hud-divider"></div>
+        <button class="drop-btn" id="dropBtn">▶ &nbsp;RELEASE OBJECT</button>
+        <button class="reset-btn" id="resetBtn">↺ &nbsp;RESET</button>
+      </section>
+
+      <p class="hint" id="hint"> Set a mass, then release the object</p>
+    </main>
+
+    <section class="explainer">
+      <div class="explainer-inner">
+        <div class="explainer-col">
+          <span class="eyebrow">WHY IT STRECHES</span>
+          <h2>Gravity doesn't pull evenly</h2>
+          <p>Gravity weakens with distance, so the side of an object nearer a blackhole always pulled harder than the side farther away.
+            Near a blackhole, this gradient gets so steep that the nearer and far sides experience wildly different accelerations.</p>
+        </div>
+
+        <div class="explainer-col">
+          <span class="eyebrow">THE NOODLE IMIT</span>
+          <h2>When stretch beats structure</h2>
+          <p>Once the pull across an object exceeds its structural strength, it gives way. It stretches radially and compresses from the sides. 
+            Physics literally call this "spaghettification".</p>
+        </div>
+        
+        <div class="explainer-col">
+          <span class="eyebrow">MASS CHANGES  THE STORY</span>
+          <h2>Bigger isn't always more violent</h2>
+          <p>Counterintuitively, smaller blackholes spaghettify you <em>farther away</em> from the horizon. A supermassive blackhole's gradient 
+            is so gentle at its huge event horizon that you could cross it entirely intact (before dying later)</p>
+        </div>
+
+      </div> 
+    </section>
     
+    <footer>
+      <p>A weekend physics toy. Math is approximate for visualization purposes (Δg ≈ 2GMl / r³). don't use this to navigate near Sagittarius A*.</p>
+    </footer>
+          
+    <script>
+      const canvas = document.getElementById('sim');
+      const ctx = canvas.getContext('2d');
+      const massSlider = document.getElementById('massSlider');
+      const dropBtn = document.getElementById('dropBtn');
+      const resetBtn = document.getElementById('resetBtn');
+      const bodyBtns = document.querySelectorAll('.body-btn');
+
+      /*Introducing physics constants*/
+      const G = 6.67430e-11; // Gravitational constant
+      const c = 299792458; //speed of light in vaccum
+      const M_sun = 1.98847e30; // Mass of the sun in kg
+
+      let currentMass = parsefloat(massSlider.value);
+      let bodyType = 'astronaut';
+      let isFalling = false;
+      let isShredded = false;
+      let timeElapsed = 0;
+      let p = 0; //fall progress 0to 1 
+      let lastTime = null;
+
+      let w, h;
+
+      function getRsKm(mass) {
+        const rsMeters = (2 * G * mass * M_sun) / (c * c);
+        return rsMeters / 1000; // Convert to kilometers
+      }
+
+      function updateHUD() {
+        document.getElementById('massValue').innerText = currentMass.toFixed(0);
+        let rs = getRsKm(currentMass);
+        document.getElementById('rsValue').innerText = rs < 1 ? rs.toFixed(2): rs.toFixed(0);
+      } 
+
+      massSlider.addEventListener('input', (e) => {
+        currentMass = parseFloat(e.target.value);
+        updateHUD();
+        positionLabel();
+        if (!isFalling) {
+          document.getElementById('distValue').innerText = '-';
+          document.getElementById('ratioValue').innerText = '-';
+        }
+      });
+
+
+      bodyBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          bodyBtns.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          bodyType = btn.dataset.body;
+        });
+      });
+
+      dropBtn.addEventListener('click', () => {
+        if (!isFalling) return;
+        console.log("Dropping playload...");
+        isFalling = true;
+        isShredded = false;
+        p = 0;
+        timeElapsed = 0;
+         lastTime = null;
+        dropBtn.disabled = true;
+        dropBtn.innerText = '◌  FALLING…';
+        document.getElementById('statusValue').innerText = 'IN TRANSIT';
+        document.getElementById('statusValue').className = 'readout-value status-value';
+      });
+
+
+      resetBtn.addEventListener('click', () => {
+        console.log("Resetting sim");
+        isFalling = false;
+        isShredded = false;
+        p = 0;
+        timeElapsed = 0;
+        dropBtn.disabled = false;
+        dropBtn.innerText = '▶ RELEASE OBJECT';
+        document.getElementById('statusValue').innerText = 'NOMINAL';
+        document.getElementById('statusValue').className = 'readout-value status-value';
+        document.getElementById('distValue').innerText = '-';
+        document.getElementById('ratioValue').innerText = '-';
+        document.getElementById('stressValue').innerText = '-';
+        document.getElementById('stressMeterFill').style.width = '0%';
+        document.getElementById('clock').innerText = 'T+00:00.0';
+      });
+
+      function resize() {
+        const dpr = Math.min(window.devicePixelRatio || 1,2);
+        const rect = canvas.getBoundingClientRect();
+        w = rect.width;
+        h = rect.height;
+        canvas.width = w * dpr;
+        canvas.height = h * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        positionLabel();
+      }
+      window,addEventListener('resize', resize);
+      
+      function positionLabel() {
+        const lbl = document.getElementById('horizontalLabel');
+        if (!lbl) return;
+        const r = getVisualRadius();
+        lbl.style.left = (w/2 + r + 14) + 'px';
+        lbl.style.top = (h/2 - 6) + 'px';
+      }
+
+      function getVisualRadius() {
+        //magic number to make it look decent
+        return Math,min(26 + 26* Math.pow(currentMass / 10, 0.28), Math.min(w, h) * 0.32);
+      }
+
+      
+
+
+ 
+    </script>
+
+
+
 </body>
 </html>
