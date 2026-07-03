@@ -685,13 +685,159 @@
         return Math,min(26 + 26* Math.pow(currentMass / 10, 0.28), Math.min(w, h) * 0.32);
       }
 
-      
+      //generating some random stars for background
+      let stars = [];
+      for(let i=0; i<80; i++) {
+        stars.push({x: Math.random(), y: Math.random(), r: Math.random() + 0.2, a: Math.random()}); 
+      }
 
+      function drawEnv(cx, cy, r) {
+        ctx.clearRect(0, 0, w, h);
+        //drawing stars with slight lensing effect
+        stars.forEach(s => {
+          let dx = (s.x * w) - cx, dy=(s.y * h) - cy;
+          let dist = Math.hypot(dx, dy);
+          let pull = Math.min(1500 / (dist * dist + 1), 6);
+          ctx.fillStyle = 'rgba(232, 230, 224, ${s.a})';
+          ctx.beginpath();
+          ctx.arc((s.x * w) - (dx/(dist||1))*pull, (s.y * h) - (dy/(dist||1))*pull, s.r, 0, Math.PI*2);
+          ctx.fill();
+        })
+
+        //glow
+        const g = ctx.createRadialGradient(cx, cy, r*0.8, cx, cy, r*5);
+        g.addColorStop(0, 'rgba(255, 90, 31, 0.3)');
+        g.addColorStop(0.3, 'rgba(255, 90, 31, 0.1)');
+        g.addColorStop(1, 'rgba(225,90,31,0)');
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(cx.cy,r*5,0,Math.PI*2);
+
+        //blackhole
+        ctx.fillStyle = '#000';
+        ctx.beginPath(); 
+        ctx.arc(cx,cy,r,0,Math.PI*2);
+        ctx.fill();
+
+        //horizon ring
+        ctx.strokeStyle = 'rgba(255,90,31,0.5)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      //Drawing astronaut
+      function drawAstronaut(y, stretch, cx) {
+        let len = Math.min(20*stretch, h*0.7);
+        let wid = Math.max(16 / Math.sqrt(stretch), 1.5);
+
+        ctx.save();
+        ctx.translate(cx, y);
+
+        //drawing astronaut's body
+        ctx.fillStyle = 'rgba(23,230,224,0.9)';
+        ctx.beginPath();
+        ctx.roundRect(-wid/2, -len/2, wid, len, wid/2);
+        ctx.fill();
+
+        //drawing astronaut's helmet
+        let hr = Math.max(wid/2 +2, 3);
+        ctx.fillStyle = '#111'
+        ctx.beginPath();
+        ctx.arc(0, -len/2, -hr*0.5, hr, 0, Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+
+        if (stretch>15) drawParticles(cx, y, len);
+      }
+
+      function drawProbe(y, stretch, cx) {
+        let len = 24* Math.min(stretch, 20);
+        let wid = Math.max(20 / Math.sqrt(stretch), 2);
+        ctx.save();
+        ctx.translate(cx, y);
+        ctx.fillStyle = '#ccc';
+        ctx.fillRect(-wid/2, -len/2, wid, len);
+
+        //drawing solar panels
+        if(stretch<5) {
+          ctx.strokeStyle = '#999';
+          ctx.beginPath();
+          ctx.moveTo(-wid/2);
+          ctx.lineTo(-wid/2 - 15, 0);
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.moveTo(wid/2);
+          ctx.lineTo(wid/2 + 15, 0);
+          ctx.stroke();
+        } 
+
+        ctx.restore();
+
+        if (stretch>15) drawParticles(cx, y, len);
+      }
+
+      function drawParticles(cx, cy, len) {
+        //basic shredding effect
+        ctx.fillStyle = 'rgba(255,140,90,0.8)';
+        for(let i=0; i<15; i++) {
+          let py = cy - len/2 + Math.random()*len;
+          let px = cx + (Math.random() - 0.5)*10;
+          ctx.beginPath();
+          ctx.arc(px, py, 1.5, 0, Math,PI*2);
+          ctx.fill();
+        }
+      }
+
+      function loop(time) {
+        if (!lastTime) lastTime = time;
+        let dt = (time - lastTime)/1000;
+        lastTime = time;
+
+        const cx = w/2, cy = h/2;
+        const r = getVisualRadius();
+
+        drawEnv(cx,cy,r);
+
+        if(isFalling) {
+          timeElapsed += dt;
+          //speed up fall based on mass
+          p += dt*(0.1 + Math.log10(currentMass)*0.01);
+          if(p>1) p = 1;
+
+          //easing for fall
+          let easedP = Math.pow(p, 2.5);
+          let startY = 30;
+          let objY = startY + (cy - startY) * easedP;
+          let distPx = MAth.max(cy - objY, r*0.05);
+
+          //calculate stretch - clamping to prevent crazy artifacts
+          let safeDist = Math.max(distPx, r*0.2);
+          let stretch = 1 + Math.pow(r/safeDist, 3) * (5 / Math.max(0.5, Math.log10(currentMass)));
+          stretch = Math.min(stretch, 25);
+
+          if(bodyTyppe === 'astronaut') drawAstronaut(objY, stretch, cx);
+          else drawProbe(objY, stretch, cx);
+
+          //UI Updates
+          let rsKm = getRsKm(currentMass);
+          let distKm = distPx * (rsKm / r);
+          document.getElementById('distValue').innerText = distKm.toFixed(1);
+          document.getElementById('ratioValue').innerText = (distPx / r).toFixed(2);
+
+          //rough g-force calculation (differ over 2m)
+          let gforce = ((2*G*(currentMass*M_sun)*2)/ Math.pow(distKm*1000, 3)) / 9.81;
+          document.getElementById('stressValue').innerText = gforce > 0.01 ? gforce.toFixed(1) : gforce.toExponential(2);
+          document.getElementById('stressMeterFill').style.width = Math.min((stretch-1)/15 * 100, 100) + '%';
+
+
+          //time format
+          let m = Math.floor(timeElapsed/60).toString().padStart(2, '0');
+          let s = (timeElapsed % 60).toFixed(1).padStart(4, '0');
+          document.getElementById('clock').innerText = `T+${m}:${s}`;
+
+        }
 
  
     </script>
-
-
-
 </body>
 </html>
