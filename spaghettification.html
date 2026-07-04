@@ -1,843 +1,755 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sphaghettification- Tidal Disruption Visualizer</title>
-
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spaghettification Sim</title>
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..700&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap');
-
-    :root {
-        --void: #05050a;
-        --ember: #ff5a1f;
-        --horizon: #000000;
-        --ember-dim: #7a2c12;
-        --cold: #3fa8f4;
-        --amber: #f4c430;
-        --bone: #e8e6e0;
-        --bone-dim: #93918c;
-        --hud-bg: rgba(8, 8, 12, 0.7);
-        --hud-border: rgba(232, 230, 224, 0.15);
-        --font-display: "Fraunces", serif;
-        --font-mono: "JetBrains Mono" monospace;
-        --font-body: "Inter", sans-serif;
-    }
-
-    * { box-sizing: border-box; }
-
-    html, body {
-        margin: 0;
-        padding: 0;
-        background: var(--void);
-        color: var(--bone);
-        font-family: var(--font-body);
-        overflow-x: hidden;
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-        * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
-    }
-
-    /* for ambient background that looks cool!!  */
-
-    .vignette {
-        position: fixed;
-        inset: 0;
-        z-index: 0;
-        background-image: 
-        radial-gradient(1px 1px at 12% 18%, rgba(232, 230, 224, 0.55), transparent),
-        radial-gradient(1px 1px at 12% 18%, rgba(232, 230, 224, 0.4), transparent),
-        radial-gradient(1px 1px at 12% 18%, rgba(232, 230, 224, 0.6), transparent),
-        radial-gradient(1px 1px at 12% 18%, rgba(232, 230, 224, 0.35), transparent),
-        radial-gradient(1px 1px at 12% 18%, rgba(232, 230, 224, 0.5), transparent),
-        radial-gradient(1px 1px at 12% 18%, rgba(232, 230, 224, 0.45), transparent),
-        radial-gradient(1px 1px at 12% 18%, rgba(232, 230, 224, 0.4), transparent),
-        radial-gradient(1px 1px at 12% 18%, rgba(232, 230, 224, 0.5), transparent),
-        radial-gradient(1px 1px at 12% 18%, rgba(232, 230, 224, 0.3), transparent),
-        radial-gradient(1px 1px at 12% 18%, rgba(232, 230, 224, 0.45), transparent);
-       background-repeat: no-repeat;
-    }
-
-      /* Bulding a clean masthead*/
-
-      .masthead {
-        position: relative;
-        z-index: 2;
-        max-width: 1100px;
-        margin: 0 auto;
-        padding: 28px 32px 18px;
-      }
-
-      .masthead-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-        margin-bottom: 18px;
-      }
-
-      .eyebrow {
-        font-family: var(--font-mono);
-        font-size: 11px;
-        letter-spacing: 0.18em;
-        text-transform: uppercase;
-        color: var(--bone-dim);
-      }
-
-      .eyebrow-right {
-        color: var(--cold);
-        font-variant-numeric: tabular-nums;
-      }
-
-      h1 {
-        font-family: var(--font-display);
-        font-weight: 600;
-        font-size: clamp(2.6rem, 6vw, 44rem);
-        letter-spacing: -0.01em;
-        margin: 0 0 10px;
-        font-optical-sizing: auto;
-        font-variation-settings: "opsz" 80;
-        background: linear-gradient(180deg, var(--bone) 0%, var(--bone) 60%, var(--amber) 160%);
-        -webkit-background-clip: text;
-        background-clip: text;
-      }
-      
-      .subhead {
-        font-family: var(--font-body);
-        font-size: 1.05rem;
-        line-height: 1.55;
-        color: var(--bone-dim);
-        max-width: 640px;
-        margin: 0;
-      }
-
-      /* making canvas */
-
-      .stage {
-        position: relative;
-        z-index: 2;
-        max-width: 1100px;
-        margin: 10px auto 0;
-        padding: 0 32px;
-      }
-
-      .sim {
-        display: block;
-        width: 100%;
-        height: min(72vh, 640px);
-        background: radial-gradient(ellipse at 50% 50%, #0a0a14 0%, #050508 55%, #020203 100%);
-        border: 1px solid var(--hud-border);
-        border-radius: 4px;
-        cursor: crosshair;
-      }
-
-      .reticle-label {
-        position: absolute;
-        font-family: var(--font-mono);
-        font-size: 10.5px;
-        letter-spacing: 0.06em;
-        color: var(--ember);
-        pointer-events: none;
-        text-shadow: 0 0 8px rgba(255, 90,  31, 0.5);
-        white-space: nowrap; 
-      }
-
-      .hint {
-        font-family: var(--font-mono);
-        font-size: 12px;
-        columns: var(--bone-dim);
-        text-align: center;
-        letter-spacing: 0.04em;
-        margin: 14px 0 6px;
-      }
-
-      /*making HUD panels*/
-
-      .hud {
-        position: absolute;
-        top: 20px;
-        width: 192px;
-        background: var(--hud-bg);
-        border: 1px solid var(--hud-border);
-        border-radius: 3px;
-        padding: 14px 16px 18px;
-        backdrop-filter: blur(6px);
-        font-family: var(--font-mono); 
-      }
-
-      .hud-left { left: 52px;}
-      .hud-right { right: 52px;}
-
-      .hud-title {
-        font-size: 10px;
-        letter-spacing: 0.16em;
-        color: var(--bone-dim);
-        border-bottom: 1px solid var(--hud-border);
-        padding-bottom: 8px;
-        margin-bottom: 10px;
-      }
-
-      .readout {
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-        padding: 5px 0;
-        font-size: 11.5px;
-      }
-
-      .readout-lable {
-        color: var(--bone-dim);
-        letter-spacing: 0.04em;
-      }
-
-      .readout-value  {
-        color: var(--cold);
-        font-weight: 500;
-        font-variant-numeric: tabular-nums;
-        margin: 0 4px;
-      }
-
-      .readout-unit {
-        color: var(--bone-dim);
-        font-size: 10px;
-      }
-
-      .readout-warn .readout-value {
-        color: var(--amber);
-      }
-
-      .readout-warn.danger .readout-value {
-        color: var(--ember);
-      }
-
-      .status-value {
-        color: var(--bone);
-      }
-
-      .status-value.danger {
-        color: var(--ember);
-      }
-
-      .status-value.shredded {
-        color: var(--ember);
-        animation: flicker 0.6s infinite alternate;
-      }
-
-      @keyframes flicker {
-        from {opacity: 1;}
-        to {opacity: 0.55;}
-      }
-
-      .stress-meter {
-        margin-top: 10px;
-        height: 5px;
-        width: 100%;
-        background: rgba(232, 230, 224, 0.08);
-        border-radius: 2px;
-        overflow: hidden;
-      }
-
-      .stress-meter-fill {
-        height: 100%;
-        width: 0%;
-        background-color: linear-gradient(90deg, var(--cold), var(--amber), var(--ember));
-        transition: width 0.15s linear;
-      }
-
-      /*mass control*/
-
-      .mass-readout {
-        font-family: var(--font-display);
-        font-size: 1.8rem;
-        font-weight: 500;
-        color: var(--bone);
-        margin-bottom: px;
-      }
-
-      .mass-readout .sub {
-        font: 0.85rem;
-        color: var(--bone-dim);
-      }
-
-      input[type= "range"] {
-        width: 100%;
-        accent-color: var(--ember);
-        height: 18px;
-        margin: 6px 0 4px;
-        background: transparent;
-      }
-
-      input[type= "range"]:focus-visible {
-        outline: 2px solid var(--cold);
-        outline-offset: 3px;
-      }
-
-      .slider-scale {
-        display: flex;
-        justify-content: space-between;
-        font-size: 8.5px;
-        color: var(--bone-dim);
-        letter-spacing: 0.02em;
-        margin-bottom: 4px;
-      }
-
-      .slider-scale span:nth-child(2),
-      .slider-scale span:nth-child(3) {
-        display: none;
-      } 
-
-      @media (min-width: 640px) {
-        .slider-scale span:nth-child(2),
-        .slider-scale span:nth-child(3) {
-            display: inline;
-        }
-      }
-
-
-      .hud-divider {
-        height: 1px;
-        background: var(--hud-border);
-        margin: 14px 0;
-      }
-
-      .body-options {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-      }
-
-      .body-btn {
-        font-family: var(--font-mono);
-        font-size: 10.5px;
-        letter-spacing: 0.06em;
-        padding: 7px 8px;
-        background: rgba(232, 230, 224, 0.04);
-        border: 1px solid var(--hud-border);
-        color: var(--bone-dim);
-        border-radius: 2px;
-        cursor: pointer;
-        text-align: left;
-        transition: border-color 0.15s, color 0.15s, background 0.15s;
-      }
-
-      .boody-btn:hover {
-        border-color: var(--cold);
-        color: var(--bone);
-      }
-
-      .body-btn.active {
-        border-color: var(--cold);
-        color: var(--cold);
-        background: rgba(63, 168, 244, 0.08);
-      }
-
-      .body-btn:focus-visible {
-        outline: 2px solid var(--cold);
-        outline-offset: 2px;
-      }
-
-      .drop-btn, .reset-btn  {
-        width: 100%;
-        font-family: var(--font-mono);
-        font-size: 11.5px;
-        letter-spacing: 0.06em;
-        padding: 10px 8px;
-        border-radius: 2px;
-        cursor: pointer;
-        margin-top: 6px; 
-      }
-
-      .drop-btn {
-        background: var(--ember);
-        border: 1px solid var(--ember);
-        color: #1a0a04;
-        font-weight: 700;
-      }
-
-      .drop-btn:hover  {background: #ff7240;}
-      .drop-btn:disabled {
-        background: rgba(255, 90, 31, 0.25);
-        background-color: rgba(255, 90, 31, 0.25);
-        color: rgba(232, 230, 224, 0.04);
-        cursor: not-allowed;
-      }
-
-      .reset-btn {
-        background: transparent;
-        border: 1px solid var(--hud-border);
-        color: var(--bone-dim);
-      }
-
-      .reset-btn:hover {
-        border-color: var(--bone-dim);
-        color: var(--bone);
-      }
-
-      .drop-btn:focus-visible, .reset-btn:focus-visible {
-        outline: 2px solid var(--cold);
-        outline-offset: 2px;
-      }
-      
-
-
-
-      .explainer {
-        position: relative;
-        z-index: 2;
-        max-width: 1100px;
-        margin: 64px auto 0;
-        padding: 48px 32px 0;
-        border-top: 1px solid var(--hud-border);
-      }
-
-      .explainer-inner {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 36px;
-      }
-
-      .explainer-col h2 {
-        font-family: var(--font-display);
-        font-size: 1.5rem;
-        font-weight: 600;
-        margin: 8px 0 12px;
-        color: var(--bone);
-      }
-
-      .explainer-col p {
-        font-size: 0.96rem;
-        line-height: 1.65;
-        color: var(--bone-dim);
-        margin: 0;
-      }
-
-      .explainer-col em {
-        color: var(--ember);
-        font-style: normal;
-      }
-
-      /*Footer*/
-
-      .site-footer {
-        position: relative;
-        z-index: 2;
-        max-width: 1100px;
-        margin: 48px auto 0;
-        padding: 22px 32px 48px;
-        font-size: 12px;
-        color: var(--bone-dim);
-        line-height: 1.6
-      }
-
-      .site-footer code {
-        font-family: var(--font-mono);
-        background: rgba(232, 230, 224, 0.06);
-        padding: 1px 5px;
-        border-radius: 2px;
-        color: var(--amber);
-      }
-
-
-      /*Responsive*/
-
-      @media (max-width: 900px) {
-        .explainer-inner {
-          grid-template-columns: 1fr;
-          gap: 32px;
-        }
-      }
-
-
-      @media (max-width: 720px) {
-        .masthead {padding: 22px 18px 14px; }
-        .stage {padding: 0 18px;}
-        .hud {
-          position: static;
-          width: 100%;
-          margin: 12px 0 0;
-        }
-
-        .hud-left, .hud-right {
-          left: auto;
-          right: auto;
-        }
-
-        #sim {height: 56vh;}
-        .reticle-label {display: none;}
-        .site-footer {padding: 22px 18px 40px; }
-      }
-
-      @media (max-width: 480px) {
-        h1 {font-size: 2.2rem;}
-        .subhead {font-size: 2.2rem;}
-      }
+/* Spaghettification Sim
+  Colors and fonts 
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..700&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap');
+
+:root {
+  --bg-color: #05050a;
+  --bh-black: #000000;
+  --orange: #ff5a1f;
+  --blue: #3fa8f4;
+  --yellow: #f4c430;
+  --text-main: #e8e6e0;
+  --text-muted: #93918c;
+  --hud-bg: rgba(8, 8, 12, 0.72);
+  --hud-border: rgba(232, 230, 224, 0.14);
+}
+
+* { box-sizing: border-box; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg-color);
+  color: var(--text-main);
+  font-family: "Inter", sans-serif;
+  overflow-x: hidden;
+}
+
+/* background effects */
+.vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 45%, transparent 0%, transparent 40%, rgba(0,0,0,0.55) 100%);
+}
+
+.stars {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  /* random star pattern */
+  background-image:
+    radial-gradient(1px 1px at 12% 18%, rgba(232,230,224,0.55), transparent),
+    radial-gradient(1px 1px at 27% 64%, rgba(232,230,224,0.4), transparent),
+    radial-gradient(1.5px 1.5px at 41% 32%, rgba(232,230,224,0.6), transparent),
+    radial-gradient(1px 1px at 58% 78%, rgba(232,230,224,0.35), transparent),
+    radial-gradient(1px 1px at 73% 22%, rgba(232,230,224,0.5), transparent),
+    radial-gradient(1.5px 1.5px at 84% 58%, rgba(232,230,224,0.45), transparent),
+    radial-gradient(1px 1px at 6% 85%, rgba(232,230,224,0.4), transparent),
+    radial-gradient(1px 1px at 92% 88%, rgba(232,230,224,0.5), transparent),
+    radial-gradient(1px 1px at 35% 92%, rgba(232,230,224,0.3), transparent),
+    radial-gradient(1px 1px at 64% 8%, rgba(232,230,224,0.45), transparent);
+  background-repeat: no-repeat;
+}
+
+/* header stuff */
+.masthead {
+  position: relative;
+  z-index: 2;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 28px 32px 18px;
+}
+
+.masthead-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 18px;
+}
+
+.eyebrow {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.eyebrow-right {
+  color: var(--blue);
+  font-variant-numeric: tabular-nums;
+}
+
+h1 {
+  font-family: "Fraunces", serif;
+  font-weight: 600;
+  font-size: clamp(2.6rem, 6vw, 4.4rem);
+  letter-spacing: -0.01em;
+  margin: 0 0 10px;
+  background: linear-gradient(180deg, var(--text-main) 0%, var(--text-main) 60%, var(--orange) 160%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.subhead {
+  font-size: 1.05rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+  max-width: 640px;
+  margin: 0;
+}
+
+/* main sim area */
+.stage {
+  position: relative;
+  z-index: 2;
+  max-width: 1100px;
+  margin: 10px auto 0;
+  padding: 0 32px;
+}
+
+#sim {
+  display: block;
+  width: 100%;
+  height: min(72vh, 640px);
+  background: radial-gradient(ellipse at 50% 50%, #0a0a14 0%, #050508 55%, #020203 100%);
+  border: 1px solid var(--hud-border);
+  border-radius: 4px;
+  cursor: crosshair;
+}
+
+.reticle-label {
+  position: absolute;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--orange);
+  pointer-events: none;
+  text-shadow: 0 0 8px rgba(255, 90, 31, 0.5);
+  white-space: nowrap;
+}
+
+.hint {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+  letter-spacing: 0.04em;
+  margin: 14px 0 6px;
+}
+
+/* HUD / Panels */
+.hud {
+  position: absolute;
+  top: 20px;
+  width: 192px;
+  background: var(--hud-bg);
+  border: 1px solid var(--hud-border);
+  border-radius: 3px;
+  padding: 14px 16px 18px;
+  backdrop-filter: blur(6px);
+  font-family: "JetBrains Mono", monospace;
+}
+
+.hud-left { left: 52px; }
+.hud-right { right: 52px; }
+
+.hud-title {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--hud-border);
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+}
+
+.readout {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 5px 0;
+  font-size: 11.5px;
+}
+
+.readout-label { color: var(--text-muted); letter-spacing: 0.04em; }
+.readout-value { color: var(--blue); font-weight: 500; margin: 0 4px; }
+.readout-unit { color: var(--text-muted); font-size: 10px; }
+
+.readout-warn .readout-value { color: var(--yellow); }
+.readout-warn.danger .readout-value { color: var(--orange); }
+
+.status-value { color: var(--text-main); }
+.status-value.danger { color: var(--orange); }
+.status-value.shredded {
+  color: var(--orange);
+  animation: flicker 0.6s infinite alternate;
+}
+
+@keyframes flicker {
+  from { opacity: 1; }
+  to { opacity: 0.55; }
+}
+
+.stress-meter {
+  margin-top: 10px;
+  height: 5px;
+  width: 100%;
+  background: rgba(232,230,224,0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.stress-meter-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--blue), var(--yellow), var(--orange));
+  transition: width 0.15s linear;
+}
+
+/* sliders & buttons */
+.mass-readout {
+  font-family: "Fraunces", serif;
+  font-size: 1.8rem;
+  font-weight: 500;
+  color: var(--text-main);
+  margin-bottom: 6px;
+}
+.mass-readout .sub { font-size: 0.85rem; color: var(--text-muted); }
+
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--orange);
+  height: 18px;
+  margin: 6px 0 4px;
+  background: transparent;
+}
+
+.slider-scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 8.5px;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+  margin-bottom: 4px;
+}
+.slider-scale span:nth-child(2), .slider-scale span:nth-child(3) { display: none; }
+@media (min-width: 640px) {
+  .slider-scale span:nth-child(2), .slider-scale span:nth-child(3) { display: inline; }
+}
+
+.hud-divider {
+  height: 1px;
+  background: var(--hud-border);
+  margin: 14px 0;
+}
+
+.body-btn {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  padding: 7px 8px;
+  background: rgba(232,230,224,0.04);
+  border: 1px solid var(--hud-border);
+  color: var(--text-muted);
+  border-radius: 2px;
+  cursor: pointer;
+  text-align: left;
+  display: block;
+  width: 100%;
+  margin-bottom: 6px;
+}
+.body-btn:hover { border-color: var(--blue); color: var(--text-main); }
+.body-btn.active { border-color: var(--blue); color: var(--blue); background: rgba(63, 168, 244, 0.08); }
+
+.drop-btn, .reset-btn {
+  width: 100%;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  padding: 10px 8px;
+  border-radius: 2px;
+  cursor: pointer;
+  margin-top: 6px;
+}
+.drop-btn { background: var(--orange); border: 1px solid var(--orange); color: #1a0a04; font-weight: 700; }
+.drop-btn:hover { background: #ff7240; }
+.drop-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.reset-btn { background: transparent; border: 1px solid var(--hud-border); color: var(--text-muted); }
+.reset-btn:hover { border-color: var(--text-muted); color: var(--text-main); }
+
+/* content section */
+.explainer {
+  position: relative;
+  z-index: 2;
+  max-width: 1100px;
+  margin: 64px auto 0;
+  padding: 48px 32px 0;
+  border-top: 1px solid var(--hud-border);
+}
+.explainer-inner {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 36px;
+}
+.explainer-col h2 {
+  font-family: "Fraunces", serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 8px 0 12px;
+}
+.explainer-col p { font-size: 0.96rem; line-height: 1.65; color: var(--text-muted); margin: 0; }
+.explainer-col em { color: var(--orange); font-style: normal; }
+
+footer {
+  max-width: 1100px;
+  margin: 48px auto 0;
+  padding: 22px 32px 48px;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+footer code { background: rgba(232,230,224,0.06); padding: 1px 5px; border-radius: 2px; color: var(--yellow); }
+
+/* mobile fixes */
+@media (max-width: 720px) {
+  .explainer-inner { grid-template-columns: 1fr; }
+  .hud { position: static; width: 100%; margin: 12px 0 0; }
+  #sim { height: 56vh; }
+  .reticle-label { display: none; }
+}
 </style>
 </head>
 <body>
-    <div class="vignette"></div>
-    <div class="stars" id="'stars"></div>
-    <header class="masthead">
-      <div class="masthead-row">
-        <span class="eyebrow">Tidal Disruption Visualizer</span>
-        <span class="eyebrow eyebrow-right" id="clock">T+00:00.0</span>
-      </div>
-      <h1>Sphaghettification</h1>
-      <p class="subhead">Watch differential gravity stretch a falling body into the thread of itself, the instant before it cosses the point of no return.</p>
-    </header>
 
-    <main class="stage">
-      <canvas id="sim"></canvas>
-      <div class="reticle-label" id="horizontalLabel">EVENT HORIZON· r₍s₍ =<span id="rsValue">-</span>km</div>
+<div class="vignette"></div>
+<div class="stars" id="stars"></div>
 
-      <section class="hud hud-left">
-        <div class="hud-title">TELEMETRY</div>
-        <div class="readout">
-          <span class="readout-lable">DISTANCE</span>
-          <span class="readout-value" id="distValue">-</span>
-          <span class="readout-unit">km</span>
-        </div>
+<header class="masthead">
+  <div class="masthead-row">
+    <span class="eyebrow">Tidal Disruption Sim</span>
+    <span class="eyebrow eyebrow-right" id="clock">T+00:00.0</span>
+  </div>
+  <h1>Spaghettification</h1>
+  <p class="subhead">Watch differential gravity stretch a falling body into a thread of itself, the instant before it crosses the point of no return.</p>
+</header>
 
-        <div class="readout">
-          <span class="readout-lable">r / rₛ</span>
-          <span class="readout-value" id="ratioValue">-</span>
-        </div>
+<main class="stage">
+  <canvas id="sim"></canvas>
 
-        <div class="readout readout-warn" id="stressRow">
-          <span class="readout-lable">TIDAL STRESS</span>
-          <span class="readout-value" id="stressValue">-</span>
-          <span class="readout-unit">g/m</span>
-        </div>
+  <div class="reticle-label" id="horizonLabel">EVENT HORIZON · r₍s₍ = <span id="rsValue">—</span> km</div>
 
-        <div class="readout">
-          <span class="readout-lable">STATUS</span>
-          <span class="readout-value status-value" id="statusValue">NOMINAL</span>
-        </div>
+  <section class="hud hud-left">
+    <div class="hud-title">TELEMETRY</div>
+    <div class="readout">
+      <span class="readout-label">DISTANCE</span>
+      <span class="readout-value" id="distValue">—</span>
+      <span class="readout-unit">km</span>
+    </div>
+    <div class="readout">
+      <span class="readout-label">r / rₛ</span>
+      <span class="readout-value" id="ratioValue">—</span>
+    </div>
+    <div class="readout readout-warn" id="stressRow">
+      <span class="readout-label">TIDAL STRESS</span>
+      <span class="readout-value" id="stressValue">—</span>
+      <span class="readout-unit">g/m</span>
+    </div>
+    <div class="readout">
+      <span class="readout-label">STATUS</span>
+      <span class="readout-value status-value" id="statusValue">NOMINAL</span>
+    </div>
+    <div class="stress-meter">
+      <div class="stress-meter-fill" id="stressMeterFill"></div>
+    </div>
+  </section>
 
-        <div class="stress-meter">
-          <div class="stress-meter-fill" id="stressMeterFill"></div>
-        </div>
-      </section>
+  <section class="hud hud-right">
+    <div class="hud-title">SINGULARITY MASS</div>
+    <div class="mass-readout"><span id="massValue">10</span> M<span class="sub">☉</span></div>
+    <input type="range" id="massSlider" min="1" max="500" value="10" step="1">
+    <div class="slider-scale">
+      <span>1 M☉</span>
+      <span>stellar</span>
+      <span>supermassive</span>
+      <span>500 M☉</span>
+    </div>
+    <div class="hud-divider"></div>
+    <div class="hud-title">FALLING BODY</div>
+    <div>
+      <button class="body-btn active" data-body="astronaut">ASTRONAUT</button>
+      <button class="body-btn" data-body="probe">PROBE</button>
+      <button class="body-btn" data-body="grid">TEST GRID</button>
+    </div>
+    <div class="hud-divider"></div>
+    <button class="drop-btn" id="dropBtn">▶ &nbsp;RELEASE OBJECT</button>
+    <button class="reset-btn" id="resetBtn">↺ &nbsp;RESET</button>
+  </section>
 
+  <p class="hint" id="hint">Set a mass, then release the object.</p>
+</main>
 
-      <section class="hud hud-right">
-        <div class="hud-title">SINGULARITY MASS</div>
-        <div class="mass-readout"><span id="massValue">10</span> M<span class="sub">☉</span></div>
-        <input type="range" id="massSlider" min="1" max="500" value="10" step="1" >
-        <div class="slider-scale">
-          <span>1 M☉</span>
-          <span>stellar</span>
-          <span>supermassive</span>
-          <span>500 M☉</span>
-        </div>
+<section class="explainer">
+  <div class="explainer-inner">
+    <div class="explainer-col">
+      <span class="eyebrow">WHY IT STRETCHES</span>
+      <h2>Gravity doesn't pull evenly</h2>
+      <p>Gravity weakens with distance, so the side of an object nearer a black hole is always pulled harder than the side farther away. Near a black hole, this gradient gets so steep that the near and far sides experience wildly different accelerations.</p>
+    </div>
+    <div class="explainer-col">
+      <span class="eyebrow">THE NOODLE LIMIT</span>
+      <h2>When stretch beats structure</h2>
+      <p>Once the pull across an object exceeds its structural strength, it gives way. It stretches radially and compresses from the sides. Physicists literally call this spaghettification.</p>
+    </div>
+    <div class="explainer-col">
+      <span class="eyebrow">MASS CHANGES THE STORY</span>
+      <h2>Bigger isn't always more violent</h2>
+      <p>Counterintuitively, smaller black holes spaghettify you <em>farther away</em> from the horizon. A supermassive black hole's gradient is so gentle at its huge event horizon that you could cross it entirely intact (before dying later).</p>
+    </div>
+  </div>
+</section>
 
-        <div class="hud-divider"></div>
-        <div class="hud-title">FALLING BODY</div>
-        <div>
-          <button class="body-btn active" data-body="astronaut">ASTRONAUT</button>
-          <button class="body-btn" data-body="probe">PROBE</button>
-          <button class="body-btn" data-body="grid">TEST GRID</button>
-        </div>
-        <div class="hud-divider"></div>
-        <button class="drop-btn" id="dropBtn">▶ &nbsp;RELEASE OBJECT</button>
-        <button class="reset-btn" id="resetBtn">↺ &nbsp;RESET</button>
-      </section>
+<footer>
+  <p>A weekend physics toy. Math is approximate for visualization purposes (Δg ≈ 2GMl / r³). Don't use this to navigate near Sagittarius A*.</p>
+</footer>
 
-      <p class="hint" id="hint"> Set a mass, then release the object</p>
-    </main>
+<script>
+// quick n dirty DOM refs
+const canvas = document.getElementById('sim');
+const ctx = canvas.getContext('2d');
+const massSlider = document.getElementById('massSlider');
+const dropBtn = document.getElementById('dropBtn');
+const resetBtn = document.getElementById('resetBtn');
+const bodyBtns = document.querySelectorAll('.body-btn');
 
-    <section class="explainer">
-      <div class="explainer-inner">
-        <div class="explainer-col">
-          <span class="eyebrow">WHY IT STRECHES</span>
-          <h2>Gravity doesn't pull evenly</h2>
-          <p>Gravity weakens with distance, so the side of an object nearer a blackhole always pulled harder than the side farther away.
-            Near a blackhole, this gradient gets so steep that the nearer and far sides experience wildly different accelerations.</p>
-        </div>
+// read the black hole fill color from CSS once, instead of hardcoding it
+const BH_COLOR = getComputedStyle(document.documentElement).getPropertyValue('--bh-black').trim() || '#000';
 
-        <div class="explainer-col">
-          <span class="eyebrow">THE NOODLE IMIT</span>
-          <h2>When stretch beats structure</h2>
-          <p>Once the pull across an object exceeds its structural strength, it gives way. It stretches radially and compresses from the sides. 
-            Physics literally call this "spaghettification".</p>
-        </div>
-        
-        <div class="explainer-col">
-          <span class="eyebrow">MASS CHANGES  THE STORY</span>
-          <h2>Bigger isn't always more violent</h2>
-          <p>Counterintuitively, smaller blackholes spaghettify you <em>farther away</em> from the horizon. A supermassive blackhole's gradient 
-            is so gentle at its huge event horizon that you could cross it entirely intact (before dying later)</p>
-        </div>
+// physical constants (close enough versions)
+const G = 6.674e-11; 
+const c = 2.998e8;
+const M_SUN = 1.989e30;
 
-      </div> 
-    </section>
+// state
+let currentMass = parseFloat(massSlider.value);
+let bodyType = 'astronaut';
+let isFalling = false;
+let isShredded = false;
+let timeElapsed = 0;
+let p = 0; // fall progress 0 to 1
+let lastTime = null;
+
+// canvas dims
+let w, h;
+
+function getRsKm(mass) {
+  const rsMeters = (2 * G * (mass * M_SUN)) / (c * c);
+  return rsMeters / 1000;
+}
+
+function updateHUD() {
+  document.getElementById('massValue').innerText = currentMass.toFixed(0);
+  let rs = getRsKm(currentMass);
+  document.getElementById('rsValue').innerText = rs < 1 ? rs.toFixed(2) : rs.toFixed(0);
+}
+
+massSlider.addEventListener('input', (e) => {
+  currentMass = parseFloat(e.target.value);
+  updateHUD();
+  positionLabel();
+  if (!isFalling) {
+    document.getElementById('distValue').innerText = '—';
+    document.getElementById('ratioValue').innerText = '—';
+  }
+});
+
+bodyBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (isFalling) return;
+    bodyBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    bodyType = btn.dataset.body;
+  });
+});
+
+dropBtn.addEventListener('click', () => {
+  if (isFalling) return;
+  console.log("Dropping payload...");
+  isFalling = true;
+  isShredded = false;
+  p = 0;
+  timeElapsed = 0;
+  lastTime = null;
+  dropBtn.disabled = true;
+  dropBtn.innerText = '◌  FALLING…';
+  document.getElementById('statusValue').innerText = 'IN TRANSIT';
+  document.getElementById('statusValue').className = 'readout-value status-value';
+});
+
+resetBtn.addEventListener('click', () => {
+  console.log("Resetting sim");
+  isFalling = false;
+  isShredded = false;
+  p = 0;
+  timeElapsed = 0;
+  dropBtn.disabled = false;
+  dropBtn.innerText = '▶  RELEASE OBJECT';
+  document.getElementById('statusValue').innerText = 'NOMINAL';
+  document.getElementById('statusValue').className = 'readout-value status-value';
+  document.getElementById('distValue').innerText = '—';
+  document.getElementById('ratioValue').innerText = '—';
+  document.getElementById('stressValue').innerText = '—';
+  document.getElementById('stressMeterFill').style.width = '0%';
+  document.getElementById('clock').innerText = 'T+00:00.0';
+});
+
+function resize() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const rect = canvas.getBoundingClientRect();
+  w = rect.width;
+  h = rect.height;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  positionLabel();
+}
+window.addEventListener('resize', resize);
+
+function positionLabel() {
+  const lbl = document.getElementById('horizonLabel');
+  if(!lbl) return;
+  const r = getVisualRadius();
+  lbl.style.left = (w/2 + r + 14) + 'px';
+  lbl.style.top = (h/2 - 6) + 'px';
+}
+
+function getVisualRadius() {
+  // magic numbers to make it look decent on screen
+  return Math.min(26 + 26 * Math.pow(currentMass / 10, 0.28), Math.min(w, h) * 0.32);
+}
+
+// generated some random stars for the background
+let stars = [];
+for (let i = 0; i < 80; i++) {
+  stars.push({ x: Math.random(), y: Math.random(), r: Math.random() + 0.2, a: Math.random() });
+}
+
+function drawEnv(cx, cy, r) {
+  ctx.clearRect(0, 0, w, h);
+  
+  // draw stars with slight lensing effect
+  stars.forEach(s => {
+    let dx = (s.x * w) - cx, dy = (s.y * h) - cy;
+    let dist = Math.hypot(dx, dy);
+    let pull = Math.min(1500 / (dist * dist + 1), 6);
+    ctx.fillStyle = `rgba(232,230,224,${s.a})`;
+    ctx.beginPath();
+    ctx.arc((s.x * w) - (dx/(dist||1))*pull, (s.y * h) - (dy/(dist||1))*pull, s.r, 0, Math.PI*2);
+    ctx.fill();
+  });
+
+  // glow
+  const g = ctx.createRadialGradient(cx, cy, r*0.8, cx, cy, r*5);
+  g.addColorStop(0, 'rgba(255,90,31,0.3)');
+  g.addColorStop(0.3, 'rgba(255,90,31,0.1)');
+  g.addColorStop(1, 'rgba(255,90,31,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(cx,cy,r*5,0,Math.PI*2); ctx.fill();
+
+  // black hole
+  ctx.fillStyle = BH_COLOR;
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
+  
+  // horizon ring
+  ctx.strokeStyle = 'rgba(255,90,31,0.5)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+}
+
+function drawAstronaut(y, stretch, cx) {
+  let len = Math.min(20 * stretch, h * 0.7);
+  let wid = Math.max(16 / Math.sqrt(stretch), 1.5);
+  
+  ctx.save();
+  ctx.translate(cx, y);
+  
+  // body
+  ctx.fillStyle = `rgba(232,230,224,0.9)`;
+  ctx.beginPath();
+  ctx.roundRect(-wid/2, -len/2, wid, len, wid/2);
+  ctx.fill();
+
+  // helmet
+  let hr = Math.max(wid/2 + 2, 3);
+  ctx.fillStyle = '#111';
+  ctx.beginPath(); ctx.arc(0, -len/2 - hr*0.5, hr, 0, Math.PI*2); ctx.fill();
+  
+  ctx.restore();
+  
+  if (stretch > 15) drawParticles(cx, y, len);
+}
+
+function drawProbe(y, stretch, cx) {
+  let len = 24 * Math.min(stretch, 20);
+  let wid = Math.max(20 / Math.sqrt(stretch), 2);
+  
+  ctx.save();
+  ctx.translate(cx, y);
+  ctx.fillStyle = '#ccc';
+  ctx.fillRect(-wid/2, -len/2, wid, len);
+  
+  // solar panels 
+  if(stretch < 5) {
+    ctx.strokeStyle = '#999';
+    ctx.beginPath(); ctx.moveTo(-wid/2, 0); ctx.lineTo(-wid/2 - 15, 0); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(wid/2, 0); ctx.lineTo(wid/2 + 15, 0); ctx.stroke();
+  }
+  ctx.restore();
+  
+  if (stretch > 15) drawParticles(cx, y, len);
+}
+
+function drawGrid(y, stretch, cx) {
+  // a small square grid that stretches radially and squeezes sideways,
+  // to make the tidal deformation itself the visual (rather than a body)
+  const baseSize = 60;
+  const cells = 4;
+  const cellLen = Math.min((baseSize / cells) * stretch, h * 0.15);
+  const cellWid = Math.max((baseSize / cells) / Math.sqrt(stretch), 1.2);
+  const totalLen = cellLen * cells;
+  const totalWid = cellWid * cells;
+
+  ctx.save();
+  ctx.translate(cx, y);
+  ctx.strokeStyle = 'rgba(63,168,244,0.85)';
+  ctx.lineWidth = 1;
+
+  // horizontal lines
+  for (let i = 0; i <= cells; i++) {
+    const ly = -totalLen / 2 + i * cellLen;
+    ctx.beginPath();
+    ctx.moveTo(-totalWid / 2, ly);
+    ctx.lineTo(totalWid / 2, ly);
+    ctx.stroke();
+  }
+  // vertical lines
+  for (let i = 0; i <= cells; i++) {
+    const lx = -totalWid / 2 + i * cellWid;
+    ctx.beginPath();
+    ctx.moveTo(lx, -totalLen / 2);
+    ctx.lineTo(lx, totalLen / 2);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+
+  if (stretch > 15) drawParticles(cx, y, totalLen);
+}
+
+function drawParticles(cx, cy, len) {
+  // basic shredding effect
+  ctx.fillStyle = 'rgba(255,140,90,0.8)';
+  for(let i=0; i<15; i++) {
+    let py = cy - len/2 + Math.random()*len;
+    let px = cx + (Math.random()-0.5)*10;
+    ctx.beginPath(); ctx.arc(px, py, 1.5, 0, Math.PI*2); ctx.fill();
+  }
+}
+
+function loop(time) {
+  if (!lastTime) lastTime = time;
+  let dt = (time - lastTime) / 1000;
+  lastTime = time;
+  
+  const cx = w/2, cy = h/2;
+  const r = getVisualRadius();
+  
+  drawEnv(cx, cy, r);
+  
+  if (isFalling) {
+    timeElapsed += dt;
+    // speed up fall based on mass
+    p += dt * (0.1 + Math.log10(currentMass)*0.01);
+    if(p > 1) p = 1;
     
-    <footer>
-      <p>A weekend physics toy. Math is approximate for visualization purposes (Δg ≈ 2GMl / r³). don't use this to navigate near Sagittarius A*.</p>
-    </footer>
-          
-    <script>
-      const canvas = document.getElementById('sim');
-      const ctx = canvas.getContext('2d');
-      const massSlider = document.getElementById('massSlider');
-      const dropBtn = document.getElementById('dropBtn');
-      const resetBtn = document.getElementById('resetBtn');
-      const bodyBtns = document.querySelectorAll('.body-btn');
-
-      /*Introducing physics constants*/
-      const G = 6.67430e-11; // Gravitational constant
-      const c = 299792458; //speed of light in vaccum
-      const M_sun = 1.98847e30; // Mass of the sun in kg
-
-      let currentMass = parsefloat(massSlider.value);
-      let bodyType = 'astronaut';
-      let isFalling = false;
-      let isShredded = false;
-      let timeElapsed = 0;
-      let p = 0; //fall progress 0to 1 
-      let lastTime = null;
-
-      let w, h;
-
-      function getRsKm(mass) {
-        const rsMeters = (2 * G * mass * M_sun) / (c * c);
-        return rsMeters / 1000; // Convert to kilometers
+    // easing for fall 
+    let easedP = Math.pow(p, 2.5);
+    let startY = 30;
+    let objY = startY + (cy - r - startY) * easedP;
+    
+    let distPx = Math.max(cy - objY, r * 0.05);
+    
+    // calculate stretch - clamping to prevent crazy artifacts
+    let safeDist = Math.max(distPx, r * 0.2);
+    let stretch = 1 + Math.pow(r/safeDist, 3) * (5 / Math.max(0.5, Math.log10(currentMass)));
+    stretch = Math.min(stretch, 25);
+    
+    if (bodyType === 'astronaut') drawAstronaut(objY, stretch, cx);
+    else if (bodyType === 'grid') drawGrid(objY, stretch, cx);
+    else drawProbe(objY, stretch, cx);
+    
+    // UI Updates
+    let rsKm = getRsKm(currentMass);
+    let distKm = distPx * (rsKm / r);
+    document.getElementById('distValue').innerText = distKm.toFixed(1);
+    document.getElementById('ratioValue').innerText = (distPx / r).toFixed(2);
+    
+    // rough g-force calc (diff over 2m)
+    let gforce = ((2 * G * (currentMass * M_SUN) * 2) / Math.pow(distKm*1000, 3)) / 9.81;
+    document.getElementById('stressValue').innerText = gforce > 0.01 ? gforce.toFixed(1) : gforce.toExponential(2);
+    
+    document.getElementById('stressMeterFill').style.width = Math.min((stretch-1)/15 * 100, 100) + '%';
+    
+    // time format
+    let m = Math.floor(timeElapsed / 60).toString().padStart(2, '0');
+    let s = (timeElapsed % 60).toFixed(1).padStart(4, '0');
+    document.getElementById('clock').innerText = `T+${m}:${s}`;
+    
+    if (distPx / r < 1.05 && !isShredded) {
+      isShredded = true;
+      console.log("Horizon crossed!");
+      let status = document.getElementById('statusValue');
+      if (stretch > 12) {
+        status.innerText = 'SPAGHETTIFIED';
+        status.className = 'readout-value status-value shredded';
+      } else {
+        status.innerText = 'HORIZON CROSSED';
+        status.className = 'readout-value status-value danger';
       }
+    }
+    
+    if (p >= 1) {
+      isFalling = false;
+      dropBtn.disabled = false;
+      dropBtn.innerText = '▶  RELEASE OBJECT';
+    }
+  }
+  
+  requestAnimationFrame(loop);
+}
 
-      function updateHUD() {
-        document.getElementById('massValue').innerText = currentMass.toFixed(0);
-        let rs = getRsKm(currentMass);
-        document.getElementById('rsValue').innerText = rs < 1 ? rs.toFixed(2): rs.toFixed(0);
-      } 
-
-      massSlider.addEventListener('input', (e) => {
-        currentMass = parseFloat(e.target.value);
-        updateHUD();
-        positionLabel();
-        if (!isFalling) {
-          document.getElementById('distValue').innerText = '-';
-          document.getElementById('ratioValue').innerText = '-';
-        }
-      });
-
-
-      bodyBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-          bodyBtns.forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          bodyType = btn.dataset.body;
-        });
-      });
-
-      dropBtn.addEventListener('click', () => {
-        if (!isFalling) return;
-        console.log("Dropping playload...");
-        isFalling = true;
-        isShredded = false;
-        p = 0;
-        timeElapsed = 0;
-         lastTime = null;
-        dropBtn.disabled = true;
-        dropBtn.innerText = '◌  FALLING…';
-        document.getElementById('statusValue').innerText = 'IN TRANSIT';
-        document.getElementById('statusValue').className = 'readout-value status-value';
-      });
-
-
-      resetBtn.addEventListener('click', () => {
-        console.log("Resetting sim");
-        isFalling = false;
-        isShredded = false;
-        p = 0;
-        timeElapsed = 0;
-        dropBtn.disabled = false;
-        dropBtn.innerText = '▶ RELEASE OBJECT';
-        document.getElementById('statusValue').innerText = 'NOMINAL';
-        document.getElementById('statusValue').className = 'readout-value status-value';
-        document.getElementById('distValue').innerText = '-';
-        document.getElementById('ratioValue').innerText = '-';
-        document.getElementById('stressValue').innerText = '-';
-        document.getElementById('stressMeterFill').style.width = '0%';
-        document.getElementById('clock').innerText = 'T+00:00.0';
-      });
-
-      function resize() {
-        const dpr = Math.min(window.devicePixelRatio || 1,2);
-        const rect = canvas.getBoundingClientRect();
-        w = rect.width;
-        h = rect.height;
-        canvas.width = w * dpr;
-        canvas.height = h * dpr;
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        positionLabel();
-      }
-      window,addEventListener('resize', resize);
-      
-      function positionLabel() {
-        const lbl = document.getElementById('horizontalLabel');
-        if (!lbl) return;
-        const r = getVisualRadius();
-        lbl.style.left = (w/2 + r + 14) + 'px';
-        lbl.style.top = (h/2 - 6) + 'px';
-      }
-
-      function getVisualRadius() {
-        //magic number to make it look decent
-        return Math,min(26 + 26* Math.pow(currentMass / 10, 0.28), Math.min(w, h) * 0.32);
-      }
-
-      //generating some random stars for background
-      let stars = [];
-      for(let i=0; i<80; i++) {
-        stars.push({x: Math.random(), y: Math.random(), r: Math.random() + 0.2, a: Math.random()}); 
-      }
-
-      function drawEnv(cx, cy, r) {
-        ctx.clearRect(0, 0, w, h);
-        //drawing stars with slight lensing effect
-        stars.forEach(s => {
-          let dx = (s.x * w) - cx, dy=(s.y * h) - cy;
-          let dist = Math.hypot(dx, dy);
-          let pull = Math.min(1500 / (dist * dist + 1), 6);
-          ctx.fillStyle = 'rgba(232, 230, 224, ${s.a})';
-          ctx.beginpath();
-          ctx.arc((s.x * w) - (dx/(dist||1))*pull, (s.y * h) - (dy/(dist||1))*pull, s.r, 0, Math.PI*2);
-          ctx.fill();
-        })
-
-        //glow
-        const g = ctx.createRadialGradient(cx, cy, r*0.8, cx, cy, r*5);
-        g.addColorStop(0, 'rgba(255, 90, 31, 0.3)');
-        g.addColorStop(0.3, 'rgba(255, 90, 31, 0.1)');
-        g.addColorStop(1, 'rgba(225,90,31,0)');
-        ctx.fillStyle = g;
-        ctx.beginPath(); ctx.arc(cx.cy,r*5,0,Math.PI*2);
-
-        //blackhole
-        ctx.fillStyle = '#000';
-        ctx.beginPath(); 
-        ctx.arc(cx,cy,r,0,Math.PI*2);
-        ctx.fill();
-
-        //horizon ring
-        ctx.strokeStyle = 'rgba(255,90,31,0.5)';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-      }
-
-      //Drawing astronaut
-      function drawAstronaut(y, stretch, cx) {
-        let len = Math.min(20*stretch, h*0.7);
-        let wid = Math.max(16 / Math.sqrt(stretch), 1.5);
-
-        ctx.save();
-        ctx.translate(cx, y);
-
-        //drawing astronaut's body
-        ctx.fillStyle = 'rgba(23,230,224,0.9)';
-        ctx.beginPath();
-        ctx.roundRect(-wid/2, -len/2, wid, len, wid/2);
-        ctx.fill();
-
-        //drawing astronaut's helmet
-        let hr = Math.max(wid/2 +2, 3);
-        ctx.fillStyle = '#111'
-        ctx.beginPath();
-        ctx.arc(0, -len/2, -hr*0.5, hr, 0, Math.PI*2);
-        ctx.fill();
-        ctx.restore();
-
-        if (stretch>15) drawParticles(cx, y, len);
-      }
-
-      function drawProbe(y, stretch, cx) {
-        let len = 24* Math.min(stretch, 20);
-        let wid = Math.max(20 / Math.sqrt(stretch), 2);
-        ctx.save();
-        ctx.translate(cx, y);
-        ctx.fillStyle = '#ccc';
-        ctx.fillRect(-wid/2, -len/2, wid, len);
-
-        //drawing solar panels
-        if(stretch<5) {
-          ctx.strokeStyle = '#999';
-          ctx.beginPath();
-          ctx.moveTo(-wid/2);
-          ctx.lineTo(-wid/2 - 15, 0);
-          ctx.stroke();
-
-          ctx.beginPath();
-          ctx.moveTo(wid/2);
-          ctx.lineTo(wid/2 + 15, 0);
-          ctx.stroke();
-        } 
-
-        ctx.restore();
-
-        if (stretch>15) drawParticles(cx, y, len);
-      }
-
-      function drawParticles(cx, cy, len) {
-        //basic shredding effect
-        ctx.fillStyle = 'rgba(255,140,90,0.8)';
-        for(let i=0; i<15; i++) {
-          let py = cy - len/2 + Math.random()*len;
-          let px = cx + (Math.random() - 0.5)*10;
-          ctx.beginPath();
-          ctx.arc(px, py, 1.5, 0, Math,PI*2);
-          ctx.fill();
-        }
-      }
-
-      function loop(time) {
-        if (!lastTime) lastTime = time;
-        let dt = (time - lastTime)/1000;
-        lastTime = time;
-
-        const cx = w/2, cy = h/2;
-        const r = getVisualRadius();
-
-        drawEnv(cx,cy,r);
-
-        if(isFalling) {
-          timeElapsed += dt;
-          //speed up fall based on mass
-          p += dt*(0.1 + Math.log10(currentMass)*0.01);
-          if(p>1) p = 1;
-
-          //easing for fall
-          let easedP = Math.pow(p, 2.5);
-          let startY = 30;
-          let objY = startY + (cy - startY) * easedP;
-          let distPx = MAth.max(cy - objY, r*0.05);
-
-          //calculate stretch - clamping to prevent crazy artifacts
-          let safeDist = Math.max(distPx, r*0.2);
-          let stretch = 1 + Math.pow(r/safeDist, 3) * (5 / Math.max(0.5, Math.log10(currentMass)));
-          stretch = Math.min(stretch, 25);
-
-          if(bodyTyppe === 'astronaut') drawAstronaut(objY, stretch, cx);
-          else drawProbe(objY, stretch, cx);
-
-          //UI Updates
-          let rsKm = getRsKm(currentMass);
-          let distKm = distPx * (rsKm / r);
-          document.getElementById('distValue').innerText = distKm.toFixed(1);
-          document.getElementById('ratioValue').innerText = (distPx / r).toFixed(2);
-
-          //rough g-force calculation (differ over 2m)
-          let gforce = ((2*G*(currentMass*M_sun)*2)/ Math.pow(distKm*1000, 3)) / 9.81;
-          document.getElementById('stressValue').innerText = gforce > 0.01 ? gforce.toFixed(1) : gforce.toExponential(2);
-          document.getElementById('stressMeterFill').style.width = Math.min((stretch-1)/15 * 100, 100) + '%';
-
-
-          //time format
-          let m = Math.floor(timeElapsed/60).toString().padStart(2, '0');
-          let s = (timeElapsed % 60).toFixed(1).padStart(4, '0');
-          document.getElementById('clock').innerText = `T+${m}:${s}`;
-
-        }
-
- 
-    </script>
+// kick it off
+window.onload = () => {
+  console.log("init spaghettification...");
+  resize();
+  updateHUD();
+  requestAnimationFrame(loop);
+};
+</script>
 </body>
 </html>
