@@ -4,12 +4,33 @@
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Black Holes</title>
+    <title>Black Holes — Entropy, Structure &amp; Equations</title>
     <link rel="stylesheet" href="style.css">
-    
 </head>
 <body>
-    <section>
+     <header class="site-header">
+        <div class="hero-visual" aria-hidden="true">
+            <div class="accretion-ring"></div>
+            <div class="event-horizon"></div>
+        </div>
+        <h1>Black Holes</h1>
+        <p class="tagline">Where gravity finishes the argument: entropy, event horizons,
+            singularities and the equations that describe them.</p>
+    </header>
+
+    <nav class="site-nav" aria-label="Section navigation">
+        <a href="#entropy">Entropy Puzzle</a>
+        <a href="#stellar">Stellar Black Holes</a>
+        <a href="#supermassive">Supermassive Black Holes</a>
+        <a href="#what-is">What is Black Hole</a>
+        <a href="#inside">Inside the Black HOle</a>
+        <a href="#equations">Equations</a>
+        <a href="#visualizer">Audio Visualizer</a>
+        <a href="#spaghettification">Spaghettification Simulator</a>
+    </nav>
+
+    <main>
+    <section id="entropy">
       <div>
         <p><b>Abstract</b> The blackhole information paradox tell us about something important about
             the way quantum mechanics and gravity fits together.In this I will try to give
@@ -50,7 +71,7 @@
 
 
 
-<section>
+<section id="stellar">
     <div>
         <h3>The Nearest Stellar Black Holes</h3>
         <img src="cygnus x-1.jpg" alt="A Giant star flowing towards a blackhole-Cygnus X-1" width="400" height="300">
@@ -123,7 +144,7 @@
 
 </section>
 
-<section>
+<section id="supermassive">
     <div>
         <h3>The Nearest Super Massive Blackhole </h3>
         <img src="sgr A.jpg" alt="Sgr A imagetaken by event horizon telescope" width="400" height="300">
@@ -207,7 +228,7 @@
     </div>
 </section>
 
-<section>
+<section id="what-is">
     <div>
         <h2>What is actually a Black hole?</h2>
      <p>Black holes are one of the mysterious objects in our cosmos.Near blackholes our physics breaks down.
@@ -220,7 +241,12 @@
         Black are created when massive stars and the end of their lives collapse after they ran out of fuel
         whuch use to make them hot bright and stable.Then the star undergoes <b>supernova explosion</b>
      </p>
-     <img src="supernova.jpg" alt="A massive star collapsing to form a black hole" width="400" height="300">
+
+    <figure>
+        <img src="supernova.jpg" alt="A massive star collapsing to form a black hole" width="400" height="300">
+        <figcaption>A massive star's collapse triggers a supernova.</figcaption>
+     </figure>
+
      <p>
         <h4>Super  Nova</h4>
         Supernova occurs when massive stars(typically mass more than 20 times the mass of our sun) exhaust  
@@ -233,14 +259,18 @@
     </div>
 </section>
 
-<section>
+<section id="inside">
     <div>
         <h2>What is inside a blackhole?</h2>
         <p>The answer of this is sadly not known by us that whatis really inside the black hole.But still
              we can make some guess about it. We known that black hole has event horizon and also a point named
              as singularity.Lets discuss them in breif.
         </p>
-        <img src="blackhole components.jpg" alt="Components of a black hole" width="800" height="500">
+
+        <figure>
+            <img src="blackhole components.jpg" alt="Components of a black hole" width="800" height="500">
+            <figcaption>The main components of a black hole.</figcaption>
+        </figure>
        
        
        <ul>
@@ -278,7 +308,11 @@
 
         <li><h3>Singularity</h3></li>
 
-        <img src="singularity.jpg" alt="Singularity of a black hole" width="400" height="300"><br>
+        <figure>
+                <img src="singularity.jpg" alt="Singularity of a black hole" width="400" height="300">
+                <figcaption>The singularity at a black hole's centre.</figcaption>
+        </figure>
+
         <p>General theory of Relativity predicts that at the centre of a black hole, there is point
             of  infinite density and negligible volume called <b>singularity</b>.We don't even know that singularity
             is a physical structure or just a result of mathematical equations.
@@ -439,7 +473,7 @@
     </div>
 </section>
 
-<section>
+<section id="equations">
     <div>
         <h3>General Equations of Blackhole</h3>
         <ul>
@@ -447,7 +481,7 @@
                 <b>Schwarzchild Metric(Static Black Hole)</b> <br>
                     <div class="row">
                         <div class="column">
-                            <img src="sch eq bk.jpg" alt="Schwarzchild Metric" width="350" height="250", style="float:left">
+                             <img src="sch eq bk.jpg" alt="Schwarzchild Metric" width="350" height="250">
                         </div>
                         <div class="column">
                             <img src="sch matrix.jpg" alt="Schwarzchild Metric Matrix" width="350" height="250">
@@ -517,10 +551,80 @@
 
 </section>
 
-<section>
+<section id="visualizer">
     <h3>Graviational Waves Audio Visulaizer</h3>
 <button><a href="Gravitational Waves Audio_Visualizer.html">Open Graviational Waves Audio Visulaizer</a></button>
-
+<p>Hear what two merging black holes sound like, converted from a gravitational-wave chirp into audio.</p>
 </section>
+
+<section id="spaghettification">
+    <h3>Spaghettification Simulator</h3>
+    <button><a href="spaghettification.html">Open Spaghettification Simulator</a></button>
+    <p>A black hole spaghettification simulator is an educational tool or virtual reality (VR) experience that visualizes the extreme tidal forces near a black hole.</p>
+</section>
+
+<footer class="site-footer">
+    Complied for educaationa; purposes . equations rendered with MathJax
+</footer>
+
+<button class="sound-control" id="soundToggle" data-playing="false" aria-pressed="false">
+    🔊 Ambient Hum
+</button>
+
+<script>
+    (function () {
+        var button = document.getElementById('soundToggle');
+        var audioCtx = null;
+        var nodes = null;
+
+        function start() {
+            audioCtx = new (window.AudioCOntext || window.webkitAudioContetxt)();
+            var osc1 = audioCtx.createOscillator();
+            var osc2 = audioCtx.createOscillator();
+            var gain = audioCtx.createGain();
+
+            osc1.type = 'sine';
+            osc1.frequency.value = 55;
+            osc2.type = 'sine';
+            osc2.frequency.value = 55.6;
+
+            gain.gain.value = 0;
+            osc1.connect(gain);
+            osc2.connect(gain);
+            gain.connect(audioCtx.destination)
+
+            osc1.start();
+                osc2.start();
+                gain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime + 1.2);
+
+                nodes = { osc1: osc1, osc2: osc2, gain: gain };
+        }
+
+        function stop() {
+            if (!nodes) return;
+            var now = audioCtx.currentTime;
+            npdes.gain.gain.linearRampToValueAtTime(0, now+0.6);
+            nodes.osc1.stop(now+0.65);
+            nodes.osc2.stop(now+0.65);
+            nodes = null;
+        }
+        
+         button.addEventListener('click', function () {
+                var playing = button.getAttribute('data-playing') === 'true';
+                if (playing) {
+                    stop();
+                    button.setAttribute('data-playing', 'false');
+                    button.setAttribute('aria-pressed', 'false');
+                    button.textContent = '🔊 Ambient Hum';
+                } else {
+                    start();
+                    button.setAttribute('data-playing', 'true');
+                    button.setAttribute('aria-pressed', 'true');
+                    button.textContent = '🔈 Stop Hum';
+                }
+        });
+    })();
+</script>
+
 </body>
 </html>        
